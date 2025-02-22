@@ -1,0 +1,8 @@
+*.o
+*.d
+*.ex
+*~
+*.dat
+*.png
+*.mod
+__pycache__/
