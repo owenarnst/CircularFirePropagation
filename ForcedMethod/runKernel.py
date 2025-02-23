@@ -32,7 +32,7 @@ for j in range(len(probabilities)):
     fire = avg[j,:,:,:]
     # Animation code provided by Kevin through Canvas, adjustements were made to match my code
     # create a figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,6))
     #plt.xlabel("X")
     #plt.ylabel("Y")
     plt.xticks([])
@@ -45,7 +45,7 @@ for j in range(len(probabilities)):
     # function for FuncAnimation to update the image
     def animate(t):
         image.set_data(fire[int(np.floor(t/4)), :, :])
-        plt.title(f'Kernel Method, p={probabilities[j]}, ' + r'$\alpha(p)\propto 2\sigma(p)-1$' + f', time={int(np.floor(t/4))}', fontsize=18)
+        plt.title(f'Kernel Method, p={probabilities[j]}, ' + r'$\alpha(p)=1-2c\cdot$ ReLU(p-0.5)' + f', time={int(np.floor(t/4))}', fontsize=18)
         return [image]
 
     # instantiate the FuncAnimation class 
@@ -61,7 +61,7 @@ for j in range(len(probabilities)):
 
     # you can save the movie like this
     # saving as mp4 not working so I saved the file as a gif
-    movie.save(f'kernelSigmoidSim{str(int(probabilities[j]*100))}.gif', writer='ffmpeg', fps = 10)
+    movie.save(f'kernelReLUSim{str(int(probabilities[j]*100))}.gif', writer='ffmpeg', fps = 10)
 
     # and show the movie like this
     plt.show()

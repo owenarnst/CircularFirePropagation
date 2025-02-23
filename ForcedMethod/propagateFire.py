@@ -169,13 +169,17 @@ def forcedPropagation(mat, distances, time, p, size):
     return mat
 
 def shiftScaleSigmoid(p):
-        """
-        shift and scale sigmoid such that it has the same domain and range as tanh, arctan
+    """
+    shift and scale sigmoid such that it has the same domain and range as tanh, arctan
         
-        domain: (-infinity, infinity) but we are only concerned with 0 < p < 1
-        range: (-1,1)
-        """
-        return 2/(1+np.exp(-1*p)) - 1
+    domain: (-infinity, infinity) but we are only concerned with 0 < p < 1
+    range: (-1,1)
+    """
+    return 2/(1+np.exp(-1*p)) - 1
+
+def ReLU(p):
+    return np.maximum(0,p)
+
 
 def kernelPropagation(mat, distances, time, p, size):
     """
@@ -191,11 +195,12 @@ def kernelPropagation(mat, distances, time, p, size):
     
     def alpha(p, a, b, c, func):
         """
-        I can think of four possible functions that we can plug into alpha
+        I can think of five possible functions that we can plug into alpha
             tanh
             arctan
             cube root
             scaled and shifted version of sigmoid with range (-1,1)
+            scaled and shifted version of ReLU (shift right by 0.5, scale as desired)
         
         p: probability of fire propagating in the vertical/horizontal directions
         a: shift func left/right to center around some value between 0 and 1
@@ -204,6 +209,8 @@ def kernelPropagation(mat, distances, time, p, size):
 
         returns scaling value to alter probabilities of propagation to diagonal cell 
         """
+        if func == ReLU:
+            return -2*c*func(p-0.5)+1
         return 1 - c/(func(a*b)+func(b*(1-a))) * (func(b*(p-a)) + func(a*b))
 
     mat[time+1,:,:] = mat[time,:,:] # copy current timestate to next timestate for propagation
