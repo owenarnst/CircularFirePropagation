@@ -3,6 +3,5 @@
 *.ex
 *~
 *.dat
-*.png
 *.mod
 __pycache__/
