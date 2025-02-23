@@ -48,6 +48,57 @@ def getSurroundingCells(pos, size, radius):
     return surroundingCells
 
 
+def getAdjacentCells(pos, size, radius):
+    """
+    searches grid and returns list of neighboring cells 
+
+    pos: position of current cell
+    size: size of the grid [n,m]
+    radius: number of spaces vertically and horizontally we are willing to look
+    """
+
+    left = max(0, pos[0]-radius) # left endpoint of neighbor search
+    right = min(size[1], pos[0]+radius+1) # right endpoint of neighbor search
+    top = max(0,pos[1]-radius) # top endpoint of neighbor search
+    bottom = min(size[0], pos[1]+radius+1) #bottom endpoint of neighbor search
+    # add 1 to right and top endpoints to account for zero indexing
+
+    adjacentCells = []
+    for i in range(left,right):
+        if i != pos[0]:
+            adjacentCells.append([i,pos[1]])
+
+    for j in range(top, bottom):
+        if j != pos[1]:
+            adjacentCells.append([pos[0],j])
+
+    return adjacentCells
+
+def getDiagonalCells(pos, size, radius):
+    """
+    searches grid and returns list of neighboring cells 
+
+    pos: position of current cell
+    size: size of the grid [n,m]
+    radius: number of spaces diagonally we are willing to look
+    """
+
+    left = max(0, pos[0]-radius) # left endpoint of neighbor search
+    right = min(size[1], pos[0]+radius+1) # right endpoint of neighbor search
+    top = max(0,pos[1]-radius) # top endpoint of neighbor search
+    bottom = min(size[0], pos[1]+radius+1) #bottom endpoint of neighbor search
+    # add 1 to right and top endpoints to account for zero indexing
+
+    diagonalCells = []
+
+    for i in range(left, right):
+        for j in range(top,bottom):
+            if i != pos[0] and j != pos[1]:
+                diagonalCells.append([i,j])
+
+    return diagonalCells
+
+
 def standardPropagation(mat, distances, time, p, size):
     """
     mat: matrix size (# of states x size)
@@ -112,6 +163,75 @@ def forcedPropagation(mat, distances, time, p, size):
                         numSurroundingFires += 1
                 
                 fireProb = 1- (1-p)**numSurroundingFires # 1- prob(no fire)
+
+                if np.random.uniform(0,1) < fireProb:
+                    mat[time+1,i,j] = 1
+    return mat
+
+def shiftScaleSigmoid(p):
+        """
+        shift and scale sigmoid such that it has the same domain and range as tanh, arctan
+        
+        domain: (-infinity, infinity) but we are only concerned with 0 < p < 1
+        range: (-1,1)
+        """
+        return 2/(1+np.exp(-1*p)) - 1
+
+def kernelPropagation(mat, distances, time, p, size):
+    """
+    mat: matrix size (# of states x size)
+    time: current timestate (propagating to time + 1)
+    p: probability of fire spreading to adjacent cell
+    size: size of grid
+
+    Propagates one timestep forward given current state of the grid
+
+    Returns input matrix, mat, with timestep (time +1) updated
+    """
+    
+    def alpha(p, a, b, c, func):
+        """
+        I can think of four possible functions that we can plug into alpha
+            tanh
+            arctan
+            cube root
+            scaled and shifted version of sigmoid with range (-1,1)
+        
+        p: probability of fire propagating in the vertical/horizontal directions
+        a: shift func left/right to center around some value between 0 and 1
+        b: scale steepness of function
+        c: scale function such that alpha(1) = 1-c
+
+        returns scaling value to alter probabilities of propagation to diagonal cell 
+        """
+        return 1 - c/(func(a*b)+func(b*(1-a))) * (func(b*(p-a)) + func(a*b))
+
+    mat[time+1,:,:] = mat[time,:,:] # copy current timestate to next timestate for propagation
+
+    alpha_p = alpha(p, 0.6, 10, 1-2/7, shiftScaleSigmoid)
+
+    # check all cells in matrix
+    # if cell is 0, then find neighboring cells and count how many are on fire 
+    # calculate probability of fire for current cell then roll 
+    # ignite based on roll
+    for i in range(size[0]):
+        for j in range(size[1]):
+            if mat[time,i,j] == 0:
+                adjacentCells = getAdjacentCells([i,j], size, 1)
+                numAdjacentFires = 0
+                for cell in adjacentCells:
+                    if mat[time,cell[0], cell[1]] != 0:
+                        numAdjacentFires += 1
+                
+                diagonalCells = getDiagonalCells([i,j], size, 1)
+                numDiagonalFires = 0
+                for cell in diagonalCells:
+                    if mat[time, cell[0], cell[1]] != 0:
+                        numDiagonalFires += 1
+                
+                probNoFire = ((1-p)**numAdjacentFires) * ((1 - alpha_p*p)**numDiagonalFires)
+
+                fireProb = 1 - probNoFire # 1- prob(no fire)
 
                 if np.random.uniform(0,1) < fireProb:
                     mat[time+1,i,j] = 1

@@ -34,3 +34,6 @@ def testPropagation(propFunc, size, origin, p, maxt, maxr):
     print(Mavg)
     
     return Mavg
+
+
+print('hello world ' + 'hi world')

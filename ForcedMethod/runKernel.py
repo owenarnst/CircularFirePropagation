@@ -5,7 +5,8 @@ import matplotlib.animation as animation
 
 ################################################################################################################################
 # chosen test parameters
-probabilities = [0.2, 0.5, 0.8] # probabilities to test
+#probabilities = [0.2, 0.5, 0.8] # probabilities to test
+probabilities = [i/10 for i in range(1,11)]
 n = 40 # size of nxn grid
 maxt = 10 # number of timesteps
 origin = [int(n/2), int(n/2)] # origin of fire
@@ -18,7 +19,7 @@ maxr = 100 # number of runs for each probability
 
 ################################################################################################################################
 # run simulations
-avg = propagateFire.avgProp(propagateFire.standardPropagation, [n,n], origin, probabilities, maxt, maxr)
+avg = propagateFire.avgProp(propagateFire.kernelPropagation, [n,n], origin, probabilities, maxt, maxr)
 # run simulations
 ################################################################################################################################
 
@@ -44,7 +45,7 @@ for j in range(len(probabilities)):
     # function for FuncAnimation to update the image
     def animate(t):
         image.set_data(fire[int(np.floor(t/4)), :, :])
-        plt.title(f'Standard Propagation, p={probabilities[j]}, time={int(np.floor(t/4))}', fontsize=18)
+        plt.title(f'Kernel Method, p={probabilities[j]}, ' + r'$\alpha(p)\propto 2\sigma(p)-1$' + f', time={int(np.floor(t/4))}', fontsize=18)
         return [image]
 
     # instantiate the FuncAnimation class 
@@ -60,7 +61,7 @@ for j in range(len(probabilities)):
 
     # you can save the movie like this
     # saving as mp4 not working so I saved the file as a gif
-    movie.save(f'standardSim{str(int(probabilities[j]*100))}.gif', writer='ffmpeg', fps = 10)
+    movie.save(f'kernelSigmoidSim{str(int(probabilities[j]*100))}.gif', writer='ffmpeg', fps = 10)
 
     # and show the movie like this
     plt.show()

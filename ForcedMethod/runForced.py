@@ -9,7 +9,7 @@ probabilities = [0.2, 0.5, 0.8] # probabilities to test
 n = 40 # size of nxn grid
 maxt = 10 # number of timesteps
 origin = [int(n/2), int(n/2)] # origin of fire
-maxr = 100 # number of runs for each method and probability combination
+maxr = 100 # number of runs for each probability
 # chosen test parameters
 ################################################################################################################################
 
@@ -43,15 +43,15 @@ for j in range(len(probabilities)):
 
     # function for FuncAnimation to update the image
     def animate(t):
-        image.set_data(fire[t, :, :])
-        plt.title(f'New Propagation Method with p={probabilities[j]} at time={t}', fontsize=18)
+        image.set_data(fire[int(np.floor(t/4)), :, :])
+        plt.title(f'Forced Method, p={probabilities[j]}, time={int(np.floor(t/4))}', fontsize=18)
         return [image]
 
     # instantiate the FuncAnimation class 
     movie = animation.FuncAnimation(
         fig = fig, 
         func = animate, # animate function as defined above
-        frames = maxt + 1, # number of timesteps + initial state
+        frames = 4*(maxt + 1), # number of timesteps + initial state
         interval = 200, 
         blit = False, # change blitting to False in order to set title depending on frame number
         # https://stackoverflow.com/questions/44594887/how-to-update-plot-title-with-matplotlib-using-animation
@@ -60,7 +60,7 @@ for j in range(len(probabilities)):
 
     # you can save the movie like this
     # saving as mp4 not working so I saved the file as a gif
-    #movie.save(f'constrainedSim{str(int(probabilities[j]*100))}.gif', writer='ffmpeg', fps = 10)
+    movie.save(f'forcedSim{str(int(probabilities[j]*100))}.gif', writer='ffmpeg', fps = 10)
 
     # and show the movie like this
     plt.show()
