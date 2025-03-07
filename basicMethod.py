@@ -56,13 +56,20 @@ def forwardBasic(mat, size, p, time):
     # ignite based on roll
     for i in range(size[0]):
         for j in range(size[1]):
-            if mat[time,i,j] == 1:
+
+            # check for "off" cells
+            if mat[time,i,j] == 0:
                 neighbors = getSurroundingCells([i,j], size, 1)
+                numSurroundingFires = 0
+                
                 for cell in neighbors:
-                    if mat[time, cell[0], cell[1]] == 0:
-                        rng = np.random.uniform(0,1)
-                        if rng < p:
-                            mat[time+1, cell[0], cell[1]] = 1
+                    if mat[time, cell[0], cell[1]] == 1:
+                        numSurroundingFires += 1
+                
+                fireProb = 1 - (1-p)**numSurroundingFires
+                rng = np.random.uniform(0,1)
+                if rng < fireProb:
+                    mat[time+1,i,j]=1
 
     return mat
 
@@ -121,8 +128,9 @@ def basicEnssemble(size, origin, p, maxt, maxr):
 
 
 if __name__ == "__main__":
-    probabilities = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
-    n = 41
+    #probabilities = np.arange(0.1,1.1,0.1)
+    probabilities = [0.9]
+    n = 23
     size=[n,n]
     maxt = 10
     origin = 2*[int(n/2)]
@@ -130,11 +138,14 @@ if __name__ == "__main__":
     L = 0.5
 
 
+    ratios = []
+
+
     for p in probabilities:
         # simulate fire using multiple realizations
         avgFire = basicEnssemble(size, origin, p, maxt, maxr)
 
-        """
+        
         # animate simulations
         fire = avgFire[:,:,:]
         # Animation code provided by Kevin through Canvas, adjustements were made to match my code
@@ -167,41 +178,28 @@ if __name__ == "__main__":
 
         # and show the movie like this
         plt.colorbar()
-        plt.show()"""
+        plt.show()
 
         cardinalDistances = []
         diagonalDistances = []
         ratios = []
-        for t in range(1, maxt):
-            dN = distance.distance(avgFire[t,:,:], origin, L, 'N')
-            dS = distance.distance(avgFire[t,:,:], origin, L, 'S')
-            dW = distance.distance(avgFire[t,:,:], origin, L, 'W')
-            dE = distance.distance(avgFire[t,:,:], origin, L, 'E')
-            d1 = np.mean([dN, dS, dW, dE])
+        dN = distance.distance(avgFire[-1,:,:], origin, L, 'N')
+        dS = distance.distance(avgFire[-1,:,:], origin, L, 'S')
+        dW = distance.distance(avgFire[-1,:,:], origin, L, 'W')
+        dE = distance.distance(avgFire[-1,:,:], origin, L, 'E')
+        d1 = np.mean([dN, dS, dW, dE])
 
-            dNW = distance.distance(avgFire[t,:,:], origin, L, 'NW')
-            dNE = distance.distance(avgFire[t,:,:], origin, L, 'NE')
-            dSW = distance.distance(avgFire[t,:,:], origin, L, 'SW')
-            dSE = distance.distance(avgFire[t,:,:], origin, L, 'SE')
-            d2 = np.mean([dNW, dNE, dSW, dSE])
-
-            R = d1/d2
-            cardinalDistances.append(d1)
-            diagonalDistances.append(d2)
-            ratios.append(R)
-
+        dNW = distance.distance(avgFire[-1,:,:], origin, L, 'NW')
+        dNE = distance.distance(avgFire[-1,:,:], origin, L, 'NE')
+        dSW = distance.distance(avgFire[-1,:,:], origin, L, 'SW')
+        dSE = distance.distance(avgFire[-1,:,:], origin, L, 'SE')
+        d2 = np.mean([dNW, dNE, dSW, dSE])
 
         R = d1/d2
         error = abs(1-R)
+        ratios.append(R)
 
         
-
-
-        '''fig, ax = plt.subplots()
-        plt.title(f"Average Forced Method > {L}, p={p}", fontsize=18, fontweight='bold')
-        ax.imshow(avgFire[-1,:,:]>L, cmap='coolwarm')
-        ax.text(1,1, f'|1-R|' + r'$\approx$' + f'{str(round(error,3))}', fontsize=18, fontweight='bold')
-        plt.show()'''
 
 
         print(f'Method: Basic')
@@ -209,20 +207,10 @@ if __name__ == "__main__":
         print(f'R: {R}')
         print(f'Error: {error}')
         print('\n')
-
-        fig1, ax1 = plt.subplots()
-        ax1.plot(range(1, maxt), cardinalDistances, label='cardinal distance')
-        ax1.plot(range(1, maxt), diagonalDistances, label='diagonal distance')
-        ax1.legend()
-        ax1.set_title(f'Distances, p-{p}')
-        ax1.set_xlabel('Distance')
-        ax1.set_ylabel('Time')
-        ax1.grid()
-
-        fig2, ax2 = plt.subplots()
-        ax2.plot(range(1, maxt), ratios)
-        ax2.set_title('cardinal to diagonal distance ratio')
-        ax2.set_ylabel(f'R, p={p}')
-        ax2.set_ylabel('Time')
-        ax2.grid()
-        plt.show()
+    
+    plt.plot(probabilities, ratios)
+    plt.title("Basic Method R vs. p")
+    plt.xlabel('p')
+    plt.ylabel('R')
+    plt.grid()
+    plt.show()

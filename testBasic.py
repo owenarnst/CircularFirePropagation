@@ -37,10 +37,10 @@ def testBasic(size, origin, p, maxt, maxr):
     return Mavg
 
 if __name__ == "__main__":
-    n = 4
-    origin = origin = np.array([[1,1], [1,2], [2,1], [2,2]])
+    n = 5
+    origin = 2*[int(n/2)]
     p = 0.8
-    maxt = 1
+    maxt = 2
     maxr = 5000
     Mavg = testBasic([n,n], origin, p, maxt, maxr)
     print("\n")

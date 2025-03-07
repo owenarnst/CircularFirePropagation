@@ -59,9 +59,13 @@ def forwardForced(mat, size, p, time, distances):
     # ignite based on roll
     for i in range(size[0]):
         for j in range(size[1]):
+
+            # check that distance from (i,j) to origin is less than timestep
+            # check for cells that are "off"
             if distances[i,j] <= (time + 1) and mat[time,i,j] == 0:
                 neighbors = getSurroundingCells([i,j], size, 1)
                 numSurroundingFires = 0
+                
                 for cell in neighbors:
                     if mat[time,cell[0], cell[1]] != 0:
                         numSurroundingFires += 1
@@ -133,70 +137,72 @@ def forcedEnssemble(size, origin, p, maxt, maxr):
 
 
 if __name__ == "__main__":
-    p = 0.8
-    n = 41
+    probabilities = np.arange(0.1,1.1,0.1)
+    n = 23
     size=[n,n]
     maxt = 10
     origin = 2*[int(n/2)]
     maxr = 1000
     L = 0.5
-
-    # simulate fire with best alpha
-    avgFire = forcedEnssemble(size, origin, p, maxt, maxr)
-
-
-    # animate simulations
-    fire = avgFire[:,:,:]
-    # Animation code provided by Kevin through Canvas, adjustements were made to match my code
-    # create a figure
-    fig = plt.figure()
-
-    # create an Axes.Image object with imshow()
-    image = plt.imshow(fire[0, :, :])
+    
+    for p in probabilities:
+        # simulate fire with best alpha
+        avgFire = forcedEnssemble(size, origin, p, maxt, maxr)
 
 
-    # function for FuncAnimation to update the image
-    def animate(t):
-        image.set_data(fire[int(np.floor(t/4)), :, :])
-        plt.title(f'Average of Forced Method, p={p}, t={int(np.floor(t/4))}', fontsize=18)
-        return [image]
+        # animate simulations
+        fire = avgFire[:,:,:]
+        # Animation code provided by Kevin through Canvas, adjustements were made to match my code
+        # create a figure
+        fig = plt.figure()
 
-    # instantiate the FuncAnimation class 
-    movie = animation.FuncAnimation(
-        fig = fig, 
-        func = animate, # animate function as defined above
-        frames = 4*(maxt + 1), # number of timesteps + initial state
-        interval = 200, 
-        blit = False, # change blitting to False in order to set title depending on frame number
-        # https://stackoverflow.com/questions/44594887/how-to-update-plot-title-with-matplotlib-using-animation
-        repeat = False
-    )
-
-    # you can save the movie like this
-    movie.save(f'forcedSim{str(int(p*100))}.gif', writer='ffmpeg', fps = 10)
-
-    # and show the movie like this
-    plt.colorbar()
-    plt.show()
+        # create an Axes.Image object with imshow()
+        image = plt.imshow(fire[0, :, :])
 
 
-    dN = distance.distance(avgFire[-1,:,:], origin, L, 'N')
-    dS = distance.distance(avgFire[-1,:,:], origin, L, 'S')
-    dW = distance.distance(avgFire[-1,:,:], origin, L, 'W')
-    dE = distance.distance(avgFire[-1,:,:], origin, L, 'E')
-    d1 = np.mean([dN, dS, dW, dE])
+        # function for FuncAnimation to update the image
+        def animate(t):
+            image.set_data(fire[int(np.floor(t/4)), :, :])
+            plt.title(f'Average of Forced Method, p={p}, t={int(np.floor(t/4))}', fontsize=18)
+            return [image]
 
-    dNW = distance.distance(avgFire[-1,:,:], origin, L, 'NW')
-    dNE = distance.distance(avgFire[-1,:,:], origin, L, 'NE')
-    dSW = distance.distance(avgFire[-1,:,:], origin, L, 'SW')
-    dSE = distance.distance(avgFire[-1,:,:], origin, L, 'SE')
-    d2 = np.mean([dNW, dNE, dSW, dSE])
+        # instantiate the FuncAnimation class 
+        movie = animation.FuncAnimation(
+            fig = fig, 
+            func = animate, # animate function as defined above
+            frames = 4*(maxt + 1), # number of timesteps + initial state
+            interval = 200, 
+            blit = False, # change blitting to False in order to set title depending on frame number
+            # https://stackoverflow.com/questions/44594887/how-to-update-plot-title-with-matplotlib-using-animation
+            repeat = False
+        )
 
-    R = d1/d2
-    error = abs(1-R)
+        # you can save the movie like this
+        #movie.save(f'forcedSim{str(int(p*100))}.gif', writer='ffmpeg', fps = 10)
 
-    print(f'Method: Forced')
-    print(f'p: {p}')
-    print(f'R: {R}')
-    print(f'Error: {error}')
-    print('\n')
+        # and show the movie like this
+        plt.colorbar()
+        plt.show()
+
+        # Compute value of R
+        dN = distance.distance(avgFire[-1,:,:], origin, L, 'N')
+        dS = distance.distance(avgFire[-1,:,:], origin, L, 'S')
+        dW = distance.distance(avgFire[-1,:,:], origin, L, 'W')
+        dE = distance.distance(avgFire[-1,:,:], origin, L, 'E')
+        d1 = np.mean([dN, dS, dW, dE]) # average cardinal distance
+
+        dNW = distance.distance(avgFire[-1,:,:], origin, L, 'NW')
+        dNE = distance.distance(avgFire[-1,:,:], origin, L, 'NE')
+        dSW = distance.distance(avgFire[-1,:,:], origin, L, 'SW')
+        dSE = distance.distance(avgFire[-1,:,:], origin, L, 'SE')
+        d2 = np.mean([dNW, dNE, dSW, dSE]) #average diagonal distance
+
+        # ratio between cardinal and diagonal distance
+        R = d1/d2
+        error = abs(1-R)
+
+        print(f'Method: Forced')
+        print(f'p: {p}')
+        print(f'R: {R}')
+        print(f'Error: {error}')
+        print('\n')

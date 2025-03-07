@@ -39,7 +39,7 @@ def testKernel(size, origin, p, maxt, maxr, alpha):
 
 if __name__ == "__main__":
     n = 5
-    origin = 2*[int(n/2)]
+    origin = [int(n/2),int(n/2)]
     p = 0.2
     maxt = 2
     maxr = 5000

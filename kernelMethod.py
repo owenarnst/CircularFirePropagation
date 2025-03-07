@@ -77,19 +77,29 @@ def forwardKernel(mat, size, p, time, alpha):
     # ignite based on roll
     for i in range(size[0]):
         for j in range(size[1]):
-            if mat[time,i,j] == 1:
+            # check for cells that equal zero
+            if mat[time,i,j] == 0:
                 cardinalCells = getCardinalCells([i,j], size, 1)
                 diagonalCells = getDiagonalCells([i,j], size, 1)
+
+                # count of cardinal and diagonal fires
+                numCardinalFires = 0
+                numDiagonalFires = 0
+
                 for cell in cardinalCells:
-                    if mat[time, cell[0], cell[1]] == 0:
-                        rng = np.random.uniform(0,1)
-                        if rng < p:
-                            mat[time+1, cell[0], cell[1]] = 1
+                    if mat[time, cell[0], cell[1]] == 1:
+                        numCardinalFires += 1
+
                 for cell in diagonalCells:
-                    if mat[time, cell[0], cell[1]] == 0:
-                        rng = np.random.uniform(0,1)
-                        if rng < alpha*p:
-                            mat[time+1, cell[0], cell[1]] = 1
+                    if mat[time, cell[0], cell[1]] == 1:
+                        numDiagonalFires += 1
+            
+            fireProb = 1 - ((1-p)**numCardinalFires * (1-p*alpha)**numDiagonalFires)
+            rng = np.random.uniform(0,1)
+
+            if rng < fireProb:
+                mat[time+1,i,j]=1
+
     return mat
 
 
@@ -111,6 +121,8 @@ def propagateKernel(size, origin, p, maxt, alpha):
     # if n = 0 mod 2, light center 2x2 submatrix
 
     fires = np.zeros([maxt+1,size[0],size[1]], dtype=float) # maxt + 1 elements, each nxn
+    #for cell in origin:
+    #    fires[0,cell[0],cell[1]] = 1
     fires[0, origin[0], origin[1]] = 1
 
     # propagate fire at each timestep
@@ -152,60 +164,65 @@ def optimizeAlpha(size, origin, p, maxt, maxr, alpha0=0.5, epsilon = 0.001):
     alpha = alpha0
     delta=0.25
 
-    a = [] #keep track of alpha values
-    r = [] #keep track of distance ratios
+    alphaValues = [] #keep track of alpha values
+    ratios = [] #keep track of distance ratios
     # will plot later
 
 
     while delta > epsilon:
         print(f'alpha: {alpha}')
 
-        
+        # simulate fire
         avgFire = kernelEnssemble(size, origin, p, maxt, maxr, alpha)
-        dN = distance.distance(avgFire[-1,:,:], origin, L, 'N')
-        dS = distance.distance(avgFire[-1,:,:], origin, L, 'S')
-        dW = distance.distance(avgFire[-1,:,:], origin, L, 'W')
-        dE = distance.distance(avgFire[-1,:,:], origin, L, 'E')
-        d1 = np.mean([dN, dS, dW, dE])
-        print(d1)
 
-        dNW = distance.distance(avgFire[-1,:,:], origin, L, 'NW')
-        dNE = distance.distance(avgFire[-1,:,:], origin, L, 'NE')
-        dSW = distance.distance(avgFire[-1,:,:], origin, L, 'SW')
-        dSE = distance.distance(avgFire[-1,:,:], origin, L, 'SE')
+
+        # compute R
+        dN = distance.distance(avgFire[-1,:,:], origin, 0.5, 'N')
+        dS = distance.distance(avgFire[-1,:,:], origin, 0.5, 'S')
+        dW = distance.distance(avgFire[-1,:,:], origin, 0.5, 'W')
+        dE = distance.distance(avgFire[-1,:,:], origin, 0.5, 'E')
+        d1 = np.mean([dN, dS, dW, dE])
+        #print(d1)
+
+        dNW = distance.distance(avgFire[-1,:,:], origin, 0.5, 'NW')
+        dNE = distance.distance(avgFire[-1,:,:], origin, 0.5, 'NE')
+        dSW = distance.distance(avgFire[-1,:,:], origin, 0.5, 'SW')
+        dSE = distance.distance(avgFire[-1,:,:], origin, 0.5, 'SE')
         d2 = np.mean([dNW, dNE, dSW, dSE])
-        print(d2)
+        #print(d2)
         
         R = d1/d2
 
         print(f'R: {R}')
         print('\n')
 
-        a.append(alpha)
-        r.append(R)
+        alphaValues.append(alpha) #add alpha to list, plot later
+        ratios.append(R) # add R to list, plot later
 
         if R > 1: # traveled more distance in cardinal direction, increase probability of diagonal propagation
             alpha += delta
         elif R < 1: # traveled more distance diagonally, decrease probability of diagonal propagation
             alpha -= delta
-        else:
+        else: # R = 1, perfect circle
             break
 
-        delta *= 1/2
-
+        delta *= 1/2 # update delta
+        
+        # stop when delta is smaller than epsilon (alpha has converged)
         if delta < epsilon:
             break
-        #elif abs(1-R) < epsilon:
-        #    break
 
-    """plt.plot(a, label=r'$\alpha(p)$')
+
+    # plot evolution of alpha and R
+    """fig1 = plt.figure()
+    plt.plot(a, label=r'$\alpha(p)$')
     plt.title(r'Evolution of $\alpha(p)$,' + f' p={round(p,1)}')
     plt.xlabel('Iteration')
     plt.ylabel(r'$\alpha$'+f'({round(p,1)})')
     plt.grid()
-    plt.show()
+    #plt.show()
     
-    
+    fig2 = plt.figure()
     plt.plot(r, label=r'$R$')
     plt.title(r'Evolution of $R$,' + f' p={round(p,1)}')
     plt.xlabel('Iteration')
@@ -218,7 +235,6 @@ def optimizeAlpha(size, origin, p, maxt, maxr, alpha0=0.5, epsilon = 0.001):
 
 if __name__ == "__main__":
     probabilities = np.arange(0.1,1.1,0.1)
-    #probabilities = [0.2]
     n = 25
     size=[n,n]
     maxt = 10
@@ -238,7 +254,7 @@ if __name__ == "__main__":
         # simulate fire with best alpha
         avgFire = kernelEnssemble(size, origin, p, maxt, maxr, alpha)
 
-
+        # commenting out animations
         """     
         # animate simulations
         fire = avgFire[:,:,:]
@@ -312,14 +328,14 @@ if __name__ == "__main__":
 
 
     plt.plot(probabilities, bestAlpha, marker='o')
-    plt.title(r'$\alpha$ vs p', fontsize=18, fontweight = 'bold')
+    plt.title(r'$\mathbf{\alpha}$ vs p', fontsize=18)
     plt.xlabel('p')
     plt.ylabel(r'$\alpha$')
     plt.grid()
     plt.show()
 
     plt.plot(probabilities, ratios, marker='o')
-    plt.title(r'R vs p for Kernel Method with Best $\mathbf{alpha}$(p)', fontsize=18, fontweight = 'bold')
+    plt.title(r'R for Kernel Method with Best $\mathbf{\alpha}$(p)', fontsize=18)
     plt.xlabel('p')
     plt.ylabel('R')
     plt.grid()

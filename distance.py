@@ -35,6 +35,8 @@ def distance(mat, origin, L, direction):
     # mean value of mat at position currentCell
     meanCurrent = mat[currentCell[0], currentCell[1]]
 
+
+    # create figure
     #fig = plt.figure(figsize=(8,8))
 
     # check that current cell is within domain and mean value at currentCell >= L
@@ -45,6 +47,8 @@ def distance(mat, origin, L, direction):
         
         distanceCurrent = la.norm(currentCell-np.array(origin)) # distance between origin and  currentCell
         distancePrev = la.norm((currentCell-movement)-np.array(origin)) # distance between origin and cell prior to currentCell
+        
+        # plot the points and connect with straight line
         #plt.plot([distancePrev, distanceCurrent], [meanPrev, meanCurrent], marker='o', color='k', markersize=10)
 
     # point slope form
@@ -59,6 +63,8 @@ def distance(mat, origin, L, direction):
     m = (meanCurrent-meanPrev)/(distanceCurrent-distancePrev)
     d = distanceCurrent + (L-meanCurrent)/m
 
+    # plot point corresponding to mean value of 0.5
+    
     #plt.scatter(d,L, color='r', label=f'({round(d,3)}, {L})', zorder=2, linewidth=4)
     #plt.title(f'Mean Value vs Distance Along {direction}', fontsize=18, fontweight='bold')
     #plt.xlabel('Distance', fontsize=14)
